@@ -1,22 +1,22 @@
 # Task 4 – Secure Monitoring Logs by Restricting Access
 
-##  Objective
+## Objective
 
-To secure monitoring logs by:
+Secure monitoring logs by:
+
 - Creating a dedicated monitoring user
-- Restricting access to monitoring directory
+- Restricting access to the monitoring directory
 - Allowing full access only to the monitoring user
 - Preventing access to other users
 - Verifying proper permission enforcement
+
 This ensures better security and access management.
 
 ---
 
-#  Implementation Steps
+## Implementation Steps
 
----
-
-##  Step 1: Create Dedicated User
+### Step 1: Create dedicated user
 
 ```bash
 sudo adduser monitoruser
@@ -25,12 +25,12 @@ sudo adduser monitoruser
 Verify user creation:
 
 ```bash
-cut -d: -f1 /etc/passwd | grep monitoruser
+getent passwd monitoruser
 ```
 
 ---
 
-##  Step 2: Create Monitoring Directory
+### Step 2: Create monitoring directory
 
 ```bash
 sudo mkdir -p /opt/container-monitor/logs
@@ -40,7 +40,7 @@ This directory stores container monitoring logs.
 
 ---
 
-## ✅ Step 3: Assign Ownership to monitoruser
+### Step 3: Assign ownership to `monitoruser`
 
 ```bash
 sudo chown -R monitoruser:monitoruser /opt/container-monitor
@@ -52,56 +52,57 @@ Verify ownership:
 ls -ld /opt/container-monitor
 ```
 
-Expected output should show:
+Expected output should show owner/group as `monitoruser`:
 
-```
+```text
 monitoruser monitoruser
 ```
 
 ---
 
-## ✅ Step 4: Restrict Permissions
+### Step 4: Restrict permissions
+
+Set strict permissions so only the owner can read/write/enter the directories:
 
 ```bash
 sudo chmod -R 700 /opt/container-monitor
 ```
+
+(Optional) If you want other users in the same group to have read-only access, use `750` instead of `700`.
+
 ---
 
-# Verification Process
+## Verification Process
 
----
-
-## ✔ Test 1: Access as monitoruser
+### Test 1: Access as `monitoruser`
 
 ```bash
-su monitoruser
+sudo -iu monitoruser
 cd /opt/container-monitor
-ls
+ls -la
 ```
 
-Result: ✅ Access granted
+Expected result: access granted.
 
 ---
 
-## ❌ Test 2: Access as another user
+### Test 2: Access as another user
 
 ```bash
+sudo -iu <otheruser>
 cd /opt/container-monitor
 ```
 
-Result: ❌ Permission denied
-
-This confirms access restriction is working properly.
+Expected result: `Permission denied`.
 
 ---
 
-# Final Outcome
+## Final Outcome
 
 - Dedicated user created: `monitoruser`
 - Monitoring directory secured
 - Ownership properly assigned
-- Access restricted using chmod 700
-- Verified security enforcement
+- Access restricted with `chmod 700`
+- Verified permission enforcement
 
-Only the monitoring user can access the monitoring logs.
-
+Only `monitoruser` can access the monitoring logs.
