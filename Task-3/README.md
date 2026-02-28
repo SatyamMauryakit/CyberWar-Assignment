@@ -1,151 +1,178 @@
-# Task 3:  Monitor container resource usage and log CPU and memory usage with timestamps automatically  --using cronjob.
+# Task 3: Monitor Container Resource Usage and Log CPU/Memory with Timestamps (Cron Job)
 
-#  Objective
+## Objective
 
-The objective of this task is to:
+In this task, we will:
 
-- Create a Bash script
-- Schedule it using Cron
-- Automatically log current date and time every 1 minute
+- Create a Bash script to capture CPU and memory usage
+- Schedule it using `cron`
+- Log usage data **every 1 minute** with **current date and time**
 - Follow proper Linux directory standards
 
+---
 
-#  Why We Created Folder Inside /opt ?
+## Why Create a Folder Inside `/opt`?
 
-In Linux, the `/opt` directory is used for:
+In Linux, the `/opt` directory is typically used for:
 
 - Optional or custom applications
-- Production-level scripts
-- Third-party software
+- Third‑party software
+- Production-level scripts/tools not managed by the system package manager
 
-We created our monitoring project inside:
+We place this monitoring project inside:
 
-/opt/container-monitor
+`/opt/container-monitor`
 
 This keeps it:
 
-- Separate from user home directories
-- Organized
-- Following Linux best practices
-- Suitable for production environment
+- Separated from user home directories
+- Organized and easy to maintain
+- Aligned with Linux best practices
+- Suitable for a production environment
 
 ---
 
-#  Directory Structure
+## Directory Structure
 
+```text
 /opt/container-monitor/
-│
 ├── monitor.sh
 └── logs/
     └── monitor.log
+```
 
 ---
 
-#  Implementation Steps
+## Implementation Steps
 
-## Step 1: Create Monitoring Directory
+### Step 1: Create the Monitoring Directory
 
+```bash
 sudo mkdir -p /opt/container-monitor/logs
+```
 
 ---
 
-## Step 2: Create Script File
+### Step 2: Create the Script File
 
+Create and open the script:
+
+```bash
 sudo nano /opt/container-monitor/monitor.sh
+```
 
-Add the following content:
+Paste the following content:
 
+```bash
 #!/bin/bash
 
-# Log directory
+# Log directory and file
 LOG_DIR="/opt/container-monitor/logs"
 LOG_FILE="$LOG_DIR/monitor.log"
 
-# Create directory if not exists
-mkdir -p $LOG_DIR
+# Ensure log directory exists
+mkdir -p "$LOG_DIR"
 
 # Timestamp
 TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
 
-# CPU Usage (top command)
-CPU_USAGE=$(top -bn1 | grep "Cpu(s)" | awk '{print 100 - $8"%"}')
+# CPU Usage (%): calculate non-idle from top output
+CPU_USAGE=$(top -bn1 | awk -F',' '/Cpu\(s\)/ {gsub(/.*id, /,"",$4); gsub(/ .*/,"",$4); printf "%.1f%%", 100 - $4}')
 
-# Memory Usage
-MEMORY_USAGE=$(free -m | awk 'NR==2 {printf "%.2f%%", $3*100/$2 }')
+# Memory Usage (%)
+MEMORY_USAGE=$(free -m | awk 'NR==2 {printf "%.2f%%", $3*100/$2}')
 
-# Write to log
-echo "[$TIMESTAMP] CPU Usage: $CPU_USAGE | Memory Usage: $MEMORY_USAGE" >> $LOG_FILE
+# Append to log
+echo "[$TIMESTAMP] CPU Usage: $CPU_USAGE | Memory Usage: $MEMORY_USAGE" >> "$LOG_FILE"
+```
+
 ---
 
-## Step 3: Make Script Executable
+### Step 3: Make the Script Executable
 
+```bash
 sudo chmod +x /opt/container-monitor/monitor.sh
+```
 
 ---
 
-## Step 4: Fix Ownership (Important)
+### Step 4: Fix Ownership (Important)
 
-Cron runs under ubuntu user.  
-Since `/opt` is root-owned, we changed ownership:
+If the cron job runs under the `ubuntu` user and `/opt` is root-owned, the script may fail to write logs.
 
+Fix ownership:
+
+```bash
 sudo chown -R ubuntu:ubuntu /opt/container-monitor
+```
 
-This allows the script to write logs properly.
+(Adjust the username if your system user is different.)
 
 ---
 
-## Step 5: Add Cron Job
+### Step 5: Add the Cron Job
 
+Edit the current user’s crontab:
+
+```bash
 crontab -e
+```
 
-Add this line:
+Add this line to run every minute:
 
+```cron
 * * * * * /bin/bash /opt/container-monitor/monitor.sh
+```
 
-Verify:
+Verify the cron entry:
 
+```bash
 crontab -l
+```
 
 ---
 
-## Step 6: Ensure Cron Service Is Running
+### Step 6: Ensure the Cron Service Is Running
 
+```bash
 sudo systemctl status cron
 sudo systemctl start cron
+```
 
 ---
 
-#  Final Result
+## Final Result
 
 Every 1 minute:
 
-- Script runs automatically
-- Current date and time is saved in monitor.log
+- The script runs automatically
+- CPU usage and memory usage are logged with a timestamp in `monitor.log`
 
-Check log using:
+Check the log file:
 
+```bash
 cat /opt/container-monitor/logs/monitor.log
+```
 
-Example Output:
+Example output:
 
-[2026-02-27 19:10:01] CPU Usage: 12% | Memory Usage: 24.19%
-[2026-02-27 19:11:01] CPU Usage: 4.8% | Memory Usage: 24.24%
-[2026-02-27 19:11:07] CPU Usage: 4.8% | Memory Usage: 24.24%
-[2026-02-27 19:12:01] CPU Usage: 4.8% | Memory Usage: 24.24%
-
+```text
+[2026-02-27 19:10:01] CPU Usage: 12.0% | Memory Usage: 24.19%
+[2026-02-27 19:11:01] CPU Usage: 4.8%  | Memory Usage: 24.24%
+[2026-02-27 19:12:01] CPU Usage: 5.1%  | Memory Usage: 24.24%
+```
 
 ---
 
-#  Key Learnings
+## Key Learnings
 
 - Cron job scheduling
 - Bash scripting basics
-- Linux file permissions
-- Ownership management
-- Production directory structure (/opt)
+- Linux permissions and ownership
+- Organizing scripts under `/opt` for production-style setups
 
 ---
 
-# ✅ Task 3 Successfully Completed
+## ✅ Task 3 Completed
 
-Automated Date & Time Logging using Cron and Bash Script.
+Automated CPU & Memory logging with timestamps using a Bash script and Cron.
